@@ -32,24 +32,17 @@ public class NeuralNetTest implements Runnable {
 
     private static DecimalFormat df = new DecimalFormat("0.000");
 
-    public static void main(String[] args) {
-    	(new NeuralNetTest()).run();
+    public NeuralNetTest(int iterations, DataSet set) {
+    	this.trainingIterations = iterations;
+    	this.instances = set.getInstances();
+    	this.set = set;
     }
     
-    public void run() {
-    	DataSet set = null;
-		try {
-			set = (new CSVDataSetReader("data/hd_train.fann")).read();
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-    	//System.out.println(new DataSetDescription(new DataSet(instances)));
-		(new LabelSplitFilter()).filter(set);
-		System.out.println(set.getDescription());
-		
-		instances = set.getInstances();
-		
+    /*public static void main(String[] args) {
+    	(new NeuralNetTest(100)).run();
+    }*/
+    
+    public void run() {		
         for(int i = 0; i < oa.length; i++) {
             networks[i] = factory.createClassificationNetwork(
                 new int[] {inputLayer, hiddenLayer, outputLayer});
@@ -57,7 +50,7 @@ public class NeuralNetTest implements Runnable {
         }
         BufferedWriter bw = null;
         try {
-			bw = new BufferedWriter(new FileWriter(new File("nn_results.txt")));
+			bw = new BufferedWriter(new FileWriter(new File("nn_results_" + trainingIterations+".txt")));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -115,7 +108,7 @@ public class NeuralNetTest implements Runnable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-        System.out.println("Neural Networks trained.");
+        System.out.println("Neural Networks for " + trainingIterations + " trained.");
     }
 
     private static void train(OptimizationAlgorithm oa, BackPropagationNetwork network, String oaName) {
@@ -138,7 +131,7 @@ public class NeuralNetTest implements Runnable {
         }
     }
 
-    private static Instance[] initializeInstances() {
+    /*private static Instance[] initializeInstances() {
 
         double[][][] attributes = new double[151][][];
 
@@ -172,5 +165,5 @@ public class NeuralNetTest implements Runnable {
         }
 
         return instances;
-    }
+    }*/
 }

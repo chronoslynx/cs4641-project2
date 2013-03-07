@@ -1,0 +1,24 @@
+
+Results for RHC: 
+Correctly classified 118.0 instances.
+Incorrectly classified 33.0 instances.
+Percent correctly classified: 78.146%
+Training time: 2.322 seconds
+Testing time: 0.001 seconds
+
+
+Results for SA: 
+Correctly classified 115.0 instances.
+Incorrectly classified 36.0 instances.
+Percent correctly classified: 76.159%
+Training time: 2.099 seconds
+Testing time: 0.001 seconds
+
+
+Results for GA: 
+Correctly classified 109.0 instances.
+Incorrectly classified 42.0 instances.
+Percent correctly classified: 72.185%
+Training time: 33.872 seconds
+Testing time: 0.002 seconds
+

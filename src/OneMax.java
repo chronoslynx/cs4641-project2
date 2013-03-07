@@ -34,7 +34,9 @@ public class OneMax implements Runnable {
 	
 	//number of times to run the evaluation
 	private static final int times = 10;
-	
+	public static void main(String[] args) {
+		(new OneMax()).run();
+	}
 	public void run() {
 	    int[] ranges = new int[N];
 	    Arrays.fill(ranges, 2);
@@ -68,7 +70,7 @@ public class OneMax implements Runnable {
 			rhcTime += (System.nanoTime()-start)/1000000000.0;
 			rhcPerf += ef.value(rhc.getOptimal());
 			
-			SimulatedAnnealing sa = new SimulatedAnnealing(100, .95, hcp);
+			SimulatedAnnealing sa = new SimulatedAnnealing(1e11, .95, hcp);
 			fit = new FixedIterationTrainer(sa, 200000);
 			start = System.nanoTime();
 			fit.train();
@@ -76,14 +78,14 @@ public class OneMax implements Runnable {
 			saPerf += ef.value(sa.getOptimal());
 			//System.out.println(ef.value(sa.getOptimal()));
 			
-			StandardGeneticAlgorithm ga = new StandardGeneticAlgorithm(20, 20, 0, gap);
+			StandardGeneticAlgorithm ga = new StandardGeneticAlgorithm(200, 100, 20, gap);
 			fit = new FixedIterationTrainer(ga, 1000);
 			start = System.nanoTime();
 			fit.train();
 			gaTime += (System.nanoTime()-start)/1000000000.0;
 			gaPerf += ef.value(ga.getOptimal());
 			
-			MIMIC mimic = new MIMIC(50, 10, pop);
+			MIMIC mimic = new MIMIC(200, 100, pop);
 			fit = new FixedIterationTrainer(mimic, 100);
 			start = System.nanoTime();
 			fit.train();
