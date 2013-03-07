@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import opt.DiscreteChangeOneNeighbor;
 import opt.EvaluationFunction;
@@ -11,12 +12,15 @@ import opt.HillClimbingProblem;
 import opt.NeighborFunction;
 import opt.RandomizedHillClimbing;
 import opt.SimulatedAnnealing;
+import opt.example.ContinuousPeaksEvaluationFunction;
 import opt.example.CountOnesEvaluationFunction;
+import opt.example.KnapsackEvaluationFunction;
 import opt.ga.CrossoverFunction;
 import opt.ga.DiscreteChangeOneMutation;
 import opt.ga.GenericGeneticAlgorithmProblem;
 import opt.ga.GeneticAlgorithmProblem;
 import opt.ga.MutationFunction;
+import opt.ga.SingleCrossOver;
 import opt.ga.StandardGeneticAlgorithm;
 import opt.ga.UniformCrossOver;
 import opt.prob.GenericProbabilisticOptimizationProblem;
@@ -28,25 +32,49 @@ import dist.DiscreteUniformDistribution;
 import dist.Distribution;
 
 
-public class OneMax implements Runnable {
-	// size of out bit strings
-	private static final int N = 80;
-	
+public class Knapsack implements Runnable {
 	//number of times to run the evaluation
 	private static final int times = 10;
+    /** Random number generator */
+    private static final Random random = new Random();
+    /** The number of items */
+    private static final int NUM_ITEMS = 40;
+    /** The number of copies each */
+    private static final int COPIES_EACH = 4;
+    /** The maximum weight for a single element */
+    private static final double MAX_WEIGHT = 50;
+    /** The maximum volume for a single element */
+    private static final double MAX_VOLUME = 50;
+    /** The volume of the knapsack */
+    private static final double KNAPSACK_VOLUME = 
+         MAX_VOLUME * NUM_ITEMS * COPIES_EACH * .4;
 	
+    public static void main(String[] args) {
+    	(new Knapsack()).run();
+    }
+    
 	public void run() {
-	    int[] ranges = new int[N];
-	    Arrays.fill(ranges, 2);
-	    EvaluationFunction ef = new CountOnesEvaluationFunction();
+		int[] copies = new int[NUM_ITEMS];
+        Arrays.fill(copies, COPIES_EACH);
+        double[] weights = new double[NUM_ITEMS];
+        double[] volumes = new double[NUM_ITEMS];
+        for (int i = 0; i < NUM_ITEMS; i++) {
+            weights[i] = random.nextDouble() * MAX_WEIGHT;
+            volumes[i] = random.nextDouble() * MAX_VOLUME;
+        }
+         int[] ranges = new int[NUM_ITEMS];
+        Arrays.fill(ranges, COPIES_EACH + 1);
+        EvaluationFunction ef = new KnapsackEvaluationFunction(weights, volumes, KNAPSACK_VOLUME, copies);
+        
 	    Distribution odd = new DiscreteUniformDistribution(ranges);
-	    NeighborFunction nf = new DiscreteChangeOneNeighbor(ranges);
-	    MutationFunction mf = new DiscreteChangeOneMutation(ranges);
-	    CrossoverFunction cf = new UniformCrossOver();
-	    Distribution df = new DiscreteDependencyTree(.1, ranges); 
-	    HillClimbingProblem hcp = new GenericHillClimbingProblem(ef, odd, nf);
-	    GeneticAlgorithmProblem gap = new GenericGeneticAlgorithmProblem(ef, odd, mf, cf);
-	    ProbabilisticOptimizationProblem pop = new GenericProbabilisticOptimizationProblem(ef, odd, df);
+        NeighborFunction nf = new DiscreteChangeOneNeighbor(ranges);
+        MutationFunction mf = new DiscreteChangeOneMutation(ranges);
+        CrossoverFunction cf = new SingleCrossOver();
+        Distribution df = new DiscreteDependencyTree(.1, ranges); 
+        
+        HillClimbingProblem hcp = new GenericHillClimbingProblem(ef, odd, nf);
+        GeneticAlgorithmProblem gap = new GenericGeneticAlgorithmProblem(ef, odd, mf, cf);
+        ProbabilisticOptimizationProblem pop = new GenericProbabilisticOptimizationProblem(ef, odd, df);
 	    
 	    double rhcTime = 0.0;
 	    double rhcPerf = 0.0;
@@ -68,7 +96,7 @@ public class OneMax implements Runnable {
 			rhcTime += (System.nanoTime()-start)/1000000000.0;
 			rhcPerf += ef.value(rhc.getOptimal());
 			
-			SimulatedAnnealing sa = new SimulatedAnnealing(100, .95, hcp);
+			SimulatedAnnealing sa = new SimulatedAnnealing(1E11, .95, hcp);
 			fit = new FixedIterationTrainer(sa, 200000);
 			start = System.nanoTime();
 			fit.train();
@@ -76,21 +104,21 @@ public class OneMax implements Runnable {
 			saPerf += ef.value(sa.getOptimal());
 			//System.out.println(ef.value(sa.getOptimal()));
 			
-			StandardGeneticAlgorithm ga = new StandardGeneticAlgorithm(20, 20, 0, gap);
-			fit = new FixedIterationTrainer(ga, 1000);
+			StandardGeneticAlgorithm ga = new StandardGeneticAlgorithm(200, 100, 10, gap);
+	        fit = new FixedIterationTrainer(ga, 1000);
 			start = System.nanoTime();
 			fit.train();
 			gaTime += (System.nanoTime()-start)/1000000000.0;
 			gaPerf += ef.value(ga.getOptimal());
 			
-			MIMIC mimic = new MIMIC(50, 10, pop);
-			fit = new FixedIterationTrainer(mimic, 100);
+			MIMIC mimic = new MIMIC(200, 100, pop);
+	        fit = new FixedIterationTrainer(mimic, 100);
 			start = System.nanoTime();
 			fit.train();
 			mimTime += (System.nanoTime()-start)/1000000000.0;
 			mimPerf += ef.value(mimic.getOptimal());
 	    }
-	    File f = new File((new File("")).getAbsolutePath() + "/onemax.md");
+	    File f = new File((new File("")).getAbsolutePath() + "/knapsack.md");
 	    BufferedWriter w = null;
 	    try {
 			w = new BufferedWriter(new FileWriter(f));
@@ -99,7 +127,7 @@ public class OneMax implements Runnable {
 			e.printStackTrace();
 		}
 	    try {
-	    	w.write("#ONE-MAX RESULTS\n\n");
+			w.write("#KNAPSACK RESULTS\n\n");
 			w.write("<table>\n");
 			w.write("<tr>\n\t<td><strong>Algorithm</strong>\n\t<td><strong>Optimum</strong>\n\t<td><strong>Performance (s)</strong>\n</tr>\n");
 			w.write("<tr>\n\t");
@@ -144,8 +172,8 @@ public class OneMax implements Runnable {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Unable to close w (OneMax)");
+			System.out.println("Unable to close w (Knapsack)");
 		}
-	    System.out.println("OneMax Done");
+	    System.out.println("Knapsack Done");
 	}
 }

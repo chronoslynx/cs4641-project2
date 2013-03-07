@@ -6,13 +6,26 @@ import opt.SimulatedAnnealing;
 import opt.example.NeuralNetworkOptimizationProblem;
 import opt.ga.StandardGeneticAlgorithm;
 import shared.DataSet;
+import shared.DataSetDescription;
 import shared.ErrorMeasure;
 import shared.FixedIterationTrainer;
 import shared.Instance;
 import shared.SumOfSquaresError;
+import shared.filt.LabelSplitFilter;
+import shared.reader.ArffDataSetReader;
 import shared.reader.CSVDataSetReader;
-import func.nn.FeedForwardNetwork;
-import func.nn.FeedForwardNeuralNetworkFactory;
+import shared.reader.DataSetLabelBinarySeperator;
+import shared.tester.AccuracyTestMetric;
+import shared.tester.ConfusionMatrixTestMetric;
+import shared.tester.NeuralNetworkTester;
+import shared.tester.TestMetric;
+import shared.tester.Tester;
+//import shared.tester.AccuracyTestMetric;
+//import shared.tester.NeuralNetworkTester;
+//import shared.tester.TestMetric;
+//import shared.tester.Tester;
+import func.nn.feedfwd.FeedForwardNetwork;
+import func.nn.feedfwd.FeedForwardNeuralNetworkFactory;
 
 
 /**
@@ -22,36 +35,21 @@ import func.nn.FeedForwardNeuralNetworkFactory;
  * @date 2013-03-05
  */
 public class AbaloneNNOptimization {
-	/**
-	 * Tests out the perceptron with the classic xor test
-	 * @param args ignored
-	 */
 	public static void main(String[] args) {
 	    DataSet set = null;
-
-	    /*double[][][] data = {
-	           { { 1, 1, 1, 1 }, { 0 } },
-	           { { 1, 0, 1, 0 }, { 1 } },
-	           { { 0, 1, 0, 1 }, { 1 } },
-	           { { 0, 0, 0, 0 }, { 0 } }
-	    };
-	    Instance[] patterns = new Instance[data.length];
-	    for (int i = 0; i < patterns.length; i++) {
-	        patterns[i] = new Instance(data[i][0]);
-	        patterns[i].setLabel(new Instance(data[i][1]));
-	    }*/
-
-
 	    try {
-			set = (new CSVDataSetReader((new File(".")).getAbsolutePath()+"/data/abalone.data")).read();
+			set = (new ArffDataSetReader((new File(".")).getAbsolutePath()+"/data/letter-recognition-testing.arff")).read();
+			LabelSplitFilter lsf = new LabelSplitFilter();
+			lsf.filter(set);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	    Instance[] patterns = set.getInstances();
+	    System.out.println(set.getDescription());
+	    //DataSetLabelBinarySeperator.seperateLabels(set);
 	    
 	    FeedForwardNeuralNetworkFactory factory = new FeedForwardNeuralNetworkFactory();
-	    FeedForwardNetwork network = factory.createClassificationNetwork(new int[] { 8, 3, 1 });
+	    FeedForwardNetwork network = factory.createClassificationNetwork(new int[] { 16, 8, 5 });
 	    ErrorMeasure measure = new SumOfSquaresError();
 	    NeuralNetworkOptimizationProblem nno = new NeuralNetworkOptimizationProblem(
 	        set, network, measure);
@@ -67,15 +65,23 @@ public class AbaloneNNOptimization {
 	    Instance rhcOpt = rhc.getOptimal();
 	    network.setWeights(rhcOpt.getData());
 	    
-	    for (int i = 0; i < patterns.length; i++) {
+	    /*for (int i = 0; i < patterns.length; i++) {
 	        network.setInputValues(patterns[i].getData());
 	        network.run();
 	        System.out.println("~~");
 	        System.out.println(patterns[i].getLabel());
 	        System.out.println(network.getOutputValues());
-	    }
+	    }*/
 	    
-	    //SA
+	    network.setWeights(rhcOpt.getData());
+	    TestMetric acc = new AccuracyTestMetric();
+        //TestMetric cm  = new ConfusionMatrixTestMetric(set.getLabelDataSet().getInstances());
+        Tester t = new NeuralNetworkTester(network, acc);
+        t.test(set.getInstances());
+        
+        acc.printResults();
+	    
+	    /*//SA
 	    System.out.println("\nSimulated Annealing");
 	    fit = new FixedIterationTrainer(rhc, 5000);
 	    fit.train();
@@ -101,6 +107,6 @@ public class AbaloneNNOptimization {
 	        System.out.println("~~");
 	        System.out.println(patterns[i].getLabel());
 	        System.out.println(network.getOutputValues());
-	    }
+	    }*/
 	}
 }

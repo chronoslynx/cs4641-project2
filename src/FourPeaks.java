@@ -11,14 +11,14 @@ import opt.HillClimbingProblem;
 import opt.NeighborFunction;
 import opt.RandomizedHillClimbing;
 import opt.SimulatedAnnealing;
-import opt.example.CountOnesEvaluationFunction;
+import opt.example.FourPeaksEvaluationFunction;
 import opt.ga.CrossoverFunction;
 import opt.ga.DiscreteChangeOneMutation;
 import opt.ga.GenericGeneticAlgorithmProblem;
 import opt.ga.GeneticAlgorithmProblem;
 import opt.ga.MutationFunction;
+import opt.ga.SingleCrossOver;
 import opt.ga.StandardGeneticAlgorithm;
-import opt.ga.UniformCrossOver;
 import opt.prob.GenericProbabilisticOptimizationProblem;
 import opt.prob.MIMIC;
 import opt.prob.ProbabilisticOptimizationProblem;
@@ -28,25 +28,28 @@ import dist.DiscreteUniformDistribution;
 import dist.Distribution;
 
 
-public class OneMax implements Runnable {
+public class FourPeaks {
 	// size of out bit strings
-	private static final int N = 80;
+	private static final int N = 60;
+	
+	// the threshold value
+	private static final int T = N/10;
 	
 	//number of times to run the evaluation
 	private static final int times = 10;
 	
-	public void run() {
+	public static void main(String[] args) {
 	    int[] ranges = new int[N];
 	    Arrays.fill(ranges, 2);
-	    EvaluationFunction ef = new CountOnesEvaluationFunction();
+	    EvaluationFunction ef = new FourPeaksEvaluationFunction(T);
 	    Distribution odd = new DiscreteUniformDistribution(ranges);
-	    NeighborFunction nf = new DiscreteChangeOneNeighbor(ranges);
-	    MutationFunction mf = new DiscreteChangeOneMutation(ranges);
-	    CrossoverFunction cf = new UniformCrossOver();
-	    Distribution df = new DiscreteDependencyTree(.1, ranges); 
-	    HillClimbingProblem hcp = new GenericHillClimbingProblem(ef, odd, nf);
-	    GeneticAlgorithmProblem gap = new GenericGeneticAlgorithmProblem(ef, odd, mf, cf);
-	    ProbabilisticOptimizationProblem pop = new GenericProbabilisticOptimizationProblem(ef, odd, df);
+        NeighborFunction nf = new DiscreteChangeOneNeighbor(ranges);
+        MutationFunction mf = new DiscreteChangeOneMutation(ranges);
+        CrossoverFunction cf = new SingleCrossOver();
+        Distribution df = new DiscreteDependencyTree(.1, ranges); 
+        HillClimbingProblem hcp = new GenericHillClimbingProblem(ef, odd, nf);
+        GeneticAlgorithmProblem gap = new GenericGeneticAlgorithmProblem(ef, odd, mf, cf);
+        ProbabilisticOptimizationProblem pop = new GenericProbabilisticOptimizationProblem(ef, odd, df);
 	    
 	    double rhcTime = 0.0;
 	    double rhcPerf = 0.0;
@@ -68,7 +71,7 @@ public class OneMax implements Runnable {
 			rhcTime += (System.nanoTime()-start)/1000000000.0;
 			rhcPerf += ef.value(rhc.getOptimal());
 			
-			SimulatedAnnealing sa = new SimulatedAnnealing(100, .95, hcp);
+			SimulatedAnnealing sa = new SimulatedAnnealing(1E11, .95, hcp);
 			fit = new FixedIterationTrainer(sa, 200000);
 			start = System.nanoTime();
 			fit.train();
@@ -76,21 +79,21 @@ public class OneMax implements Runnable {
 			saPerf += ef.value(sa.getOptimal());
 			//System.out.println(ef.value(sa.getOptimal()));
 			
-			StandardGeneticAlgorithm ga = new StandardGeneticAlgorithm(20, 20, 0, gap);
-			fit = new FixedIterationTrainer(ga, 1000);
+			StandardGeneticAlgorithm ga = new StandardGeneticAlgorithm(200, 100, 10, gap);
+	        fit = new FixedIterationTrainer(ga, 1000);
 			start = System.nanoTime();
 			fit.train();
 			gaTime += (System.nanoTime()-start)/1000000000.0;
 			gaPerf += ef.value(ga.getOptimal());
 			
-			MIMIC mimic = new MIMIC(50, 10, pop);
-			fit = new FixedIterationTrainer(mimic, 100);
+			MIMIC mimic = new MIMIC(200, 100, pop);
+	        fit = new FixedIterationTrainer(mimic, 1000);
 			start = System.nanoTime();
 			fit.train();
 			mimTime += (System.nanoTime()-start)/1000000000.0;
 			mimPerf += ef.value(mimic.getOptimal());
 	    }
-	    File f = new File((new File("")).getAbsolutePath() + "/onemax.md");
+	    File f = new File((new File("")).getAbsolutePath() + "/four_peaks.md");
 	    BufferedWriter w = null;
 	    try {
 			w = new BufferedWriter(new FileWriter(f));
@@ -99,42 +102,47 @@ public class OneMax implements Runnable {
 			e.printStackTrace();
 		}
 	    try {
-	    	w.write("#ONE-MAX RESULTS\n\n");
-			w.write("<table>\n");
-			w.write("<tr>\n\t<td><strong>Algorithm</strong>\n\t<td><strong>Optimum</strong>\n\t<td><strong>Performance (s)</strong>\n</tr>\n");
-			w.write("<tr>\n\t");
-			w.write("<td><i>Randomized Hill Climbing</i>\n");
-			w.write("\t<td>");
+			w.write("#FOUR PEAKS RESULTS");
+			w.newLine();
+			w.newLine();
+			w.write("##Randomized Hill Climbing");
+			w.newLine();
+			w.newLine();
+			w.write("Performance: ");
 			w.write(String.valueOf(rhcPerf/times));
 			w.newLine();
-			w.write("\t<td>");
+			w.write("Timing: ");
 			w.write(String.valueOf(rhcTime/times));
 			w.newLine();
-			w.write("</tr><tr>\n\t");
-			w.write("<td><i>Simulated Annealing</i>\n");
-			w.write("\t<td>");
+			w.newLine();
+			w.write("##Simulated Annealing");
+			w.newLine();
+			w.newLine();
+			w.write("Performance: ");
 			w.write(String.valueOf(saPerf/times));
 			w.newLine();
-			w.write("\t<td>");
+			w.write("Timing: ");
 			w.write(String.valueOf(saTime/times));
 			w.newLine();
-			w.write("</tr><tr>\n\t");
-			w.write("<td><i>Genetic Algorithms</i>\n");
-			w.write("\t<td>");
+			w.newLine();
+			w.write("##Genetic Algorithms");
+			w.newLine();
+			w.newLine();
+			w.write("Performance: ");
 			w.write(String.valueOf(gaPerf/times));
 			w.newLine();
-			w.write("\t<td>");
+			w.write("Timing: ");
 			w.write(String.valueOf(gaTime/times));
 			w.newLine();
-			w.write("</tr><tr>\n\t");
-			w.write("<td><i>MIMIC</i>\n");
-			w.write("\t<td>");
+			w.newLine();
+			w.write("##MIMIC");
+			w.newLine();
+			w.newLine();
+			w.write("Performance: ");
 			w.write(String.valueOf(mimPerf/times));
 			w.newLine();
-			w.write("\t<td>");
+			w.write("Timing: ");
 			w.write(String.valueOf(mimTime/times));
-			w.newLine();
-			w.write("</tr></table>");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -144,8 +152,8 @@ public class OneMax implements Runnable {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Unable to close w (OneMax)");
+			System.out.println("Unable to close w");
 		}
-	    System.out.println("OneMax Done");
+	    System.out.println("Done");
 	}
 }
